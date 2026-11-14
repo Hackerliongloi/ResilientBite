@@ -1,6 +1,7 @@
 package com.resilientbite.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
 import android.graphics.Color;
@@ -63,25 +64,29 @@ public class MainActivity extends Activity {
     private void showPlanner() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        Button settings = new Button(this);
-        settings.setText(BuildConfig.SERVER_URL.isEmpty() ? "Change server" : "Reload meal planner");
-        settings.setOnClickListener(view -> {
-            if (BuildConfig.SERVER_URL.isEmpty()) {
+        if (BuildConfig.SERVER_URL.isEmpty()) {
+            Button settings = new Button(this);
+            settings.setText("Change server");
+            settings.setOnClickListener(view -> {
                 web.destroy();
                 web = null;
                 showConnection();
-            } else {
-                web.reload();
-            }
-        });
-        layout.addView(settings);
+            });
+            layout.addView(settings);
+        }
+        getWindow().setStatusBarColor(Color.rgb(22, 53, 40));
         web = new WebView(this);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);
         web.setWebViewClient(new WebViewClient() {
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) Toast.makeText(MainActivity.this,
-                    "Could not connect. Check your internet connection and try Reload.", Toast.LENGTH_LONG).show();
+                if (request.isForMainFrame() && !isFinishing()) {
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("Could not connect. Check your internet connection.")
+                        .setPositiveButton("Try again", (dialog, which) -> view.reload())
+                        .setNegativeButton("Close", null)
+                        .show();
+                }
             }
         });
         web.setWebChromeClient(new WebChromeClient() {

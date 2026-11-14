@@ -13,15 +13,14 @@ st.set_page_config(page_title="ResilientBite | Daily food forecast", page_icon="
 st.markdown(
     """
     <style>
-      .stApp {background: #f4f7f1; color: #183b2b;}
-      h1, h2, h3 {color: #234e35 !important;}
-      [data-testid="stVerticalBlockBorderWrapper"] {background: #ffffff; border-color: #c8d8c6;}
-      [data-testid="stFileUploaderDropzone"] {background: #e8f0e3; border: 1px dashed #71956e;}
-      [data-testid="stMetric"] {background: #e4eddf;}
-      .stButton button, .stDownloadButton button {background: #285c3d; color: white; border-color: #285c3d;}
-      .block-container {max-width: 76rem; padding-top: 3.5rem; padding-bottom: 3rem;}
-      [data-testid="stMetric"] {border-radius: .9rem; padding: 1rem 1.15rem;}
-      [data-testid="stFileUploaderDropzone"] {border-radius: .8rem;}
+      .stApp {background: #e2eae1; color: #183326;}
+      [data-testid="stHeader"] {display: none;}
+      h1, h2, h3 {color: #163528 !important;}
+      [data-testid="stVerticalBlockBorderWrapper"] {background: #f4f6f1; border-color: #a9bbaa;}
+      [data-testid="stFileUploaderDropzone"] {background: #d4e2d3; border: 1px dashed #52745d; border-radius: .35rem;}
+      [data-testid="stMetric"] {background: #d7e3d5; border-radius: .35rem; padding: 1rem;}
+      .stButton button, .stDownloadButton button {background: #214934; color: white; border-color: #214934;}
+      .block-container {max-width: 72rem; padding-top: 1.75rem; padding-bottom: 2rem;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -44,7 +43,6 @@ def load_upload(filename, contents):
 
 
 st.title("ResilientBite")
-st.caption("Plan today’s meals")
 
 with st.container(border=True):
     st.subheader("Upload menu and demand records")
