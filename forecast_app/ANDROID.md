@@ -1,6 +1,14 @@
 # ResilientBite for Android
 
-Install ResilientBite.apk on an Android 8 or newer phone. This demonstration APK opens the Python app through Android WebView and supports choosing CSV and Excel files from the phone.
+Install the signed ResilientBite.apk on Android 8 or later. The hosted build opens the meal planner at https://res-b7z8.onrender.com and uses the Android file picker for CSV and Excel uploads. It needs internet access.
+
+To rebuild the hosted APK on this Mac:
+
+    bash forecast_app/android/build.sh https://res-b7z8.onrender.com
+
+## Local backend
+
+Build with no URL argument to use a configurable server address.
 
 Start the backend from the project folder:
 
