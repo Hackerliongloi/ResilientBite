@@ -13,10 +13,10 @@ if [[ -n "$HOSTED_URL" && ! "$HOSTED_URL" =~ ^https://[a-zA-Z0-9.-]+/?$ ]]; then
   exit 1
 fi
 printf 'package com.resilientbite.app; public final class BuildConfig { public static final String SERVER_URL = "%s"; }\n' "$HOSTED_URL" > build/generated/BuildConfig.java
-"$JAVA_HOME/bin/javac" --release 8 -classpath "$SDK/platforms/android-34/android.jar" -d build/classes src/com/resilientbite/app/MainActivity.java build/generated/BuildConfig.java
+"$BUILD_TOOLS/aapt" package -f -m -M AndroidManifest.xml -S res -J build/generated -I "$SDK/platforms/android-34/android.jar" -F build/unsigned.apk
+"$JAVA_HOME/bin/javac" --release 8 -classpath "$SDK/platforms/android-34/android.jar" -d build/classes src/com/resilientbite/app/MainActivity.java build/generated/BuildConfig.java build/generated/com/resilientbite/app/R.java
 "$JAVA_HOME/bin/jar" cf build/classes.jar -C build/classes .
 "$BUILD_TOOLS/d8" --lib "$SDK/platforms/android-34/android.jar" --output build/dex build/classes.jar
-"$BUILD_TOOLS/aapt" package -f -M AndroidManifest.xml -S res -I "$SDK/platforms/android-34/android.jar" -F build/unsigned.apk
 (cd build/dex && zip -q -u ../unsigned.apk classes.dex)
 "$BUILD_TOOLS/zipalign" -f 4 build/unsigned.apk build/aligned.apk
 if [ ! -f build/demo.keystore ]; then

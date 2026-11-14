@@ -13,13 +13,13 @@ st.set_page_config(page_title="ResilientBite | Daily food forecast", page_icon="
 st.markdown(
     """
     <style>
-      .stApp {background: #e2eae1; color: #183326;}
+      .stApp {background: #f1eee7; color: #26333f;}
       [data-testid="stHeader"] {display: none;}
-      h1, h2, h3 {color: #163528 !important;}
-      [data-testid="stVerticalBlockBorderWrapper"] {background: #f4f6f1; border-color: #a9bbaa;}
-      [data-testid="stFileUploaderDropzone"] {background: #d4e2d3; border: 1px dashed #52745d; border-radius: .35rem;}
-      [data-testid="stMetric"] {background: #d7e3d5; border-radius: .35rem; padding: 1rem;}
-      .stButton button, .stDownloadButton button {background: #214934; color: white; border-color: #214934;}
+      h1, h2, h3 {color: #233b50 !important;}
+      [data-testid="stVerticalBlockBorderWrapper"] {background: #fcfaf5; border-color: #c5c7c5;}
+      [data-testid="stFileUploaderDropzone"] {background: #e6ebef; border: 1px dashed #61778b; border-radius: .35rem;}
+      [data-testid="stMetric"] {background: #e6ebef; border-radius: .35rem; padding: 1rem;}
+      .stButton button, .stDownloadButton button {background: #324e65; color: white; border-color: #324e65;}
       .block-container {max-width: 72rem; padding-top: 1.75rem; padding-bottom: 2rem;}
     </style>
     """,
