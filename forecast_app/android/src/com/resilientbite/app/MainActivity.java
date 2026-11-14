@@ -3,6 +3,9 @@ package com.resilientbite.app;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.Gravity;
+import android.view.View;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -10,6 +13,11 @@ import android.webkit.*;
 import android.widget.*;
 
 public class MainActivity extends Activity {
+    private static final long MIN_SPLASH_MS = 2000;
+    private static final long MAX_SPLASH_MS = 75000;
+    private static final int PAPER = Color.rgb(241, 238, 231);
+    private static final int SLATE = Color.rgb(35, 59, 80);
+
     private WebView web;
     private ValueCallback<Uri[]> upload;
     private String server;
@@ -74,13 +82,26 @@ public class MainActivity extends Activity {
             });
             layout.addView(settings);
         }
-        getWindow().setStatusBarColor(Color.rgb(22, 53, 40));
+        getWindow().setStatusBarColor(SLATE);
         web = new WebView(this);
+        web.setBackgroundColor(PAPER);
+        FrameLayout planner = new FrameLayout(this);
+        planner.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        View splash = createSplash();
+        planner.addView(splash, new FrameLayout.LayoutParams(-1, -1));
+        long openedAt = SystemClock.uptimeMillis();
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);
         web.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                if (splash.getVisibility() == View.VISIBLE) {
+                    waitForPlanner(view, splash, openedAt);
+                }
+            }
+
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame() && !isFinishing()) {
+                if (request.isForMainFrame() && view == web && !isFinishing()) {
+                    splash.setVisibility(View.GONE);
                     new AlertDialog.Builder(MainActivity.this)
                         .setMessage("Could not connect. Check your internet connection.")
                         .setPositiveButton("Try again", (dialog, which) -> view.reload())
@@ -100,9 +121,49 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        layout.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
+        layout.addView(planner, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(layout);
+        WebView loadingView = web;
+        planner.postDelayed(() -> {
+            if (web == loadingView) splash.setVisibility(View.GONE);
+        }, MAX_SPLASH_MS);
         web.loadUrl(server);
+    }
+
+    private View createSplash() {
+        LinearLayout splash = new LinearLayout(this);
+        splash.setOrientation(LinearLayout.VERTICAL);
+        splash.setGravity(Gravity.CENTER);
+        splash.setBackgroundColor(PAPER);
+        splash.setClickable(true);
+        int size = (int) (88 * getResources().getDisplayMetrics().density);
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.mipmap.ic_launcher);
+        splash.addView(logo, new LinearLayout.LayoutParams(size, size));
+        TextView title = new TextView(this);
+        title.setText("ResilientBite");
+        title.setTextSize(24);
+        title.setTextColor(SLATE);
+        splash.addView(title);
+        TextView status = new TextView(this);
+        status.setText("Connecting to the meal planner…");
+        status.setTextColor(SLATE);
+        splash.addView(status);
+        return splash;
+    }
+
+    private void waitForPlanner(WebView view, View splash, long openedAt) {
+        if (view != web || isFinishing() || splash.getVisibility() != View.VISIBLE) return;
+        // Streamlit renders the upload control after the browser loads its initial page.
+        view.evaluateJavascript("Boolean(document.querySelector('[data-testid=stFileUploader]'))", ready -> {
+            if (view != web || isFinishing() || splash.getVisibility() != View.VISIBLE) return;
+            if ("true".equals(ready)) {
+                long remaining = Math.max(0, MIN_SPLASH_MS - (SystemClock.uptimeMillis() - openedAt));
+                splash.postDelayed(() -> splash.setVisibility(View.GONE), remaining);
+            } else {
+                splash.postDelayed(() -> waitForPlanner(view, splash, openedAt), 250);
+            }
+        });
     }
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
