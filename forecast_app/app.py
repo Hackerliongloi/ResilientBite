@@ -1,3 +1,4 @@
+from base64 import b64encode
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -8,13 +9,23 @@ from forecast import forecast_for_day, prepare_upload, read_upload, train_model
 
 SOURCE = Path(__file__).resolve().parent.parent / "resilientbite_master_extended.csv"
 DEMO_DATE = date(2024, 11, 25)
+LOGO = b64encode(Path(__file__).with_name("loading_logo.png").read_bytes()).decode("ascii")
 
 st.set_page_config(page_title="ResilientBite | Daily food forecast", page_icon="🍽️", layout="wide")
 st.markdown(
     """
     <style>
       .stApp {background: #f1eee7; color: #26333f;}
-      [data-testid="stHeader"] {display: none;}
+      [data-testid="stHeader"], [data-testid="stStatusWidget"] {display: none;}
+      .forecast-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        background: #f1eee7;
+      }
+      .forecast-loading img {width: 88px; height: 88px;}
       h1, h2, h3 {color: #233b50 !important;}
       [data-testid="stVerticalBlockBorderWrapper"] {background: #fcfaf5; border-color: #c5c7c5;}
       [data-testid="stFileUploaderDropzone"] {background: #e6ebef; border: 1px dashed #61778b; border-radius: .35rem;}
@@ -27,17 +38,17 @@ st.markdown(
 )
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def load_model(dataset, modified):
     return train_model(dataset)
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_demo(dataset, modified):
     return prepare_upload(pd.read_csv(dataset, dtype={"food_item_id": "string"}))
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_upload(filename, contents):
     return read_upload(filename, contents)
 
@@ -85,18 +96,24 @@ def show_forecast(upload, demo_date, vacation, exams):
         st.info("Your forecast will appear automatically after you upload a file.")
         return
 
+    loading = st.empty()
+    loading.html(
+        f'<div class="forecast-loading" role="status" aria-label="Preparing forecast">'
+        f'<img src="data:image/png;base64,{LOGO}" alt=""></div>'
+    )
     try:
         if demo_date is not None:
             data = load_demo(SOURCE, SOURCE.stat().st_mtime_ns)
         else:
             data = load_upload(upload.name, upload.getvalue())
+
+        model = load_model(SOURCE, SOURCE.stat().st_mtime_ns)
+        menu, menu_kind = forecast_for_day(data, target_day, model, vacation, exams)
     except ValueError as error:
         st.error(str(error))
         return
-
-    with st.spinner("Preparing the forecast…"):
-        model = load_model(SOURCE, SOURCE.stat().st_mtime_ns)
-        menu, menu_kind = forecast_for_day(data, target_day, model, vacation, exams)
+    finally:
+        loading.empty()
 
     if menu_kind == "missing":
         last_date = data["date"].max().date()

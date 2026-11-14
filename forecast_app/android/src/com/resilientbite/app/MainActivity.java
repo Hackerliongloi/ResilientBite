@@ -140,15 +140,7 @@ public class MainActivity extends Activity {
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.mipmap.ic_launcher);
         splash.addView(logo, new LinearLayout.LayoutParams(size, size));
-        TextView title = new TextView(this);
-        title.setText("ResilientBite");
-        title.setTextSize(24);
-        title.setTextColor(SLATE);
-        splash.addView(title);
-        TextView status = new TextView(this);
-        status.setText("Connecting to the meal planner…");
-        status.setTextColor(SLATE);
-        splash.addView(status);
+        logo.setContentDescription("ResilientBite");
         return splash;
     }
 
