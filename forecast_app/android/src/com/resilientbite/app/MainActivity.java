@@ -12,7 +12,17 @@ import android.net.Uri;
 import android.webkit.*;
 import android.widget.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Locale;
+import java.util.Objects;
+
 public class MainActivity extends Activity {
+    private static final int PICK_UPLOAD = 1;
+    private static final int SAVE_FORECAST = 2;
     private static final long MIN_SPLASH_MS = 2000;
     private static final long MAX_SPLASH_MS = 75000;
     private static final int PAPER = Color.rgb(241, 238, 231);
@@ -21,9 +31,11 @@ public class MainActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> upload;
     private String server;
+    private String pendingCsvUrl;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (state != null) pendingCsvUrl = state.getString("pendingCsvUrl");
         server = BuildConfig.SERVER_URL;
         if (server.isEmpty()) {
             server = getPreferences(0).getString("server", "");
@@ -117,10 +129,12 @@ public class MainActivity extends Activity {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.setType("*/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, 1);
+                startActivityForResult(intent, PICK_UPLOAD);
                 return true;
             }
         });
+        web.setDownloadListener((url, userAgent, disposition, mimeType, length) ->
+            chooseCsvDestination(url, disposition, mimeType));
         layout.addView(planner, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(layout);
         WebView loadingView = web;
@@ -128,6 +142,66 @@ public class MainActivity extends Activity {
             if (web == loadingView) splash.setVisibility(View.GONE);
         }, MAX_SPLASH_MS);
         web.loadUrl(server);
+    }
+
+    private void chooseCsvDestination(String url, String disposition, String mimeType) {
+        Uri source = Uri.parse(url);
+        Uri planner = Uri.parse(server);
+        if (!Objects.equals(source.getScheme(), planner.getScheme())
+                || !Objects.equals(source.getHost(), planner.getHost())
+                || source.getPort() != planner.getPort()
+                || source.getPath() == null || !source.getPath().startsWith("/media/")
+                || !source.getPath().endsWith(".csv")) {
+            Toast.makeText(this, "Could not open this CSV download.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (pendingCsvUrl != null) return;
+        Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        save.addCategory(Intent.CATEGORY_OPENABLE);
+        save.setType("text/csv");
+        save.putExtra(Intent.EXTRA_TITLE, URLUtil.guessFileName(url, disposition, mimeType));
+        pendingCsvUrl = url;
+        startActivityForResult(save, SAVE_FORECAST);
+    }
+
+    private void saveForecast(String url, Uri destination) {
+        String cookies = CookieManager.getInstance().getCookie(url);
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(30000);
+                if (cookies != null) connection.setRequestProperty("Cookie", cookies);
+                String type = connection.getContentType();
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK || type == null
+                        || !type.toLowerCase(Locale.ROOT).startsWith("text/csv")) {
+                    throw new IOException("Forecast CSV unavailable");
+                }
+                try (InputStream input = connection.getInputStream();
+                        OutputStream output = getContentResolver().openOutputStream(destination, "wt")) {
+                    if (output == null) throw new IOException("No output stream");
+                    byte[] buffer = new byte[8192];
+                    int count;
+                    while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+                }
+                showSaveMessage("Forecast CSV saved.");
+            } catch (IOException | SecurityException error) {
+                showSaveMessage("Could not save the CSV. Generate the forecast and try again.");
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }, "save-forecast-csv").start();
+    }
+
+    private void showSaveMessage(String message) {
+        runOnUiThread(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show());
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("pendingCsvUrl", pendingCsvUrl);
     }
 
     private View createSplash() {
@@ -160,9 +234,16 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if (request == 1 && upload != null) {
+        if (request == PICK_UPLOAD && upload != null) {
             upload.onReceiveValue(result == RESULT_OK && data != null ? new Uri[]{data.getData()} : null);
             upload = null;
+        }
+        if (request == SAVE_FORECAST) {
+            String url = pendingCsvUrl;
+            pendingCsvUrl = null;
+            if (result == RESULT_OK && url != null && data != null && data.getData() != null) {
+                saveForecast(url, data.getData());
+            }
         }
     }
 
