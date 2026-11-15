@@ -154,21 +154,15 @@ def show_forecast(upload, demo_date, vacation, exams):
         "dining_hall": "Dining hall",
         "food_item_name": "Food item",
         "predicted_portions": "Predicted portions",
-        "yesterday": "Yesterday",
-        "last_week": "Last week",
-        "status": "Status",
     }
     table = visible[list(columns)].rename(columns=columns)
     st.dataframe(
         table, hide_index=True, height=395,
-        column_config={
-            label: st.column_config.NumberColumn(format="%d")
-            for label in ["Predicted portions", "Yesterday", "Last week"]
-        },
+        column_config={"Predicted portions": st.column_config.NumberColumn(format="%d")},
     )
     st.download_button(
         "Download forecast CSV",
-        visible.to_csv(index=False).encode("utf-8"),
+        table.to_csv(index=False).encode("utf-8"),
         f"resilientbite_forecast_{target_day}.csv",
         "text/csv",
     )
