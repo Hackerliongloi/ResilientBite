@@ -10,6 +10,7 @@ ResilientBite forecasts portions required for each scheduled menu item, meal and
 | --- | --- |
 | Karthik Kavuri | CS24I1025 |
 | Akula Sai Teja | CS24I1054 |
+| Muvvala Harsha Vardhan | EC24B1019 |
 
 - [Project report (PDF)](ResilientBite%20Phase%20Report.pdf) and [editable LaTeX source](ResilientBite%20LaTeX/main.tex).
 - [Hosted web app](https://res-b7z8.onrender.com) and [Android APK](https://github.com/Hackerliongloi/ResilientBite/releases/download/v1.6/ResilientBite.apk).
